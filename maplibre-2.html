@@ -1,0 +1,1547 @@
+<!DOCTYPE html><html lang="en"><head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Mastering MapLibre with TypeScript and React</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400;1,600&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'serif': ['Crimson Text', 'serif'],
+                        'sans': ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'earth': {
+                            50: '#faf8f5',
+                            100: '#f5f1ea',
+                            200: '#e8ddd0',
+                            300: '#d9c7b0',
+                            400: '#c7ac8a',
+                            500: '#b8926d',
+                            600: '#a67f5a',
+                            700: '#8a6849',
+                            800: '#715540',
+                            900: '#5c4635',
+                        },
+                        'ocean': {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .hero-gradient {
+            background: linear-gradient(135deg, #faf8f5 0%, #e8ddd0 50%, #d9c7b0 100%);
+        }
+        .text-gradient {
+            background: linear-gradient(135deg, #0c4a6e, #075985);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .toc-fixed {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 40;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid #e5e7eb;
+        }
+        .content-offset {
+            margin-left: 280px;
+        }
+        .toc-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 30;
+            backdrop-filter: blur(5px);
+        }
+        @media (max-width: 1024px) {
+            .toc-fixed {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            .toc-fixed.open {
+                transform: translateX(0);
+            }
+            .content-offset {
+                margin-left: 0;
+            }
+        }
+        .citation {
+            color: #0ea5e9;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+        .citation:hover {
+            color: #0284c7;
+            text-decoration: underline;
+        }
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            margin: 2rem 0;
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: center;
+        }
+        @media (max-width: 768px) {
+            .bento-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+  </head>
+
+  <body class="font-sans text-gray-900 bg-earth-50">
+    <!-- Mobile TOC Toggle -->
+    <button id="toc-toggle" class="lg:hidden fixed top-4 left-4 z-50 bg-white p-3 rounded-full shadow-lg">
+      <i class="fas fa-bars text-ocean-700"></i>
+    </button>
+
+    <!-- Table of Contents -->
+    <nav id="toc" class="toc-fixed bg-white/95 backdrop-blur-sm border-r border-gray-200">
+      <div class="p-6 border-b border-gray-200">
+        <h3 class="font-serif font-semibold text-lg text-ocean-800">Contents</h3>
+      </div>
+      <div class="p-4 space-y-2">
+        <a href="#hero" class="block py-2 px-3 text-sm text-gray-700 hover:bg-earth-100 rounded transition-colors">Introduction</a>
+        <a href="#foundations" class="block py-2 px-3 text-sm text-gray-700 hover:bg-earth-100 rounded transition-colors">1. Foundational Concepts</a>
+        <div class="ml-4 space-y-1">
+          <a href="#introduction" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">Introduction to MapLibre</a>
+          <a href="#core-api" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">Core API Understanding</a>
+          <a href="#initialization" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">Basic Initialization</a>
+          <a href="#styles" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">Working with Styles</a>
+          <a href="#sources-layers" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">Sources and Layers</a>
+          <a href="#markers-popups" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">Markers and Popups</a>
+          <a href="#controls" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">Map Controls</a>
+        </div>
+        <a href="#integration" class="block py-2 px-3 text-sm text-gray-700 hover:bg-earth-100 rounded transition-colors">2. React &amp; TypeScript Integration</a>
+        <div class="ml-4 space-y-1">
+          <a href="#setup" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">Project Setup</a>
+          <a href="#component-libs" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">Component Libraries</a>
+          <a href="#state-management" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">State Management</a>
+          <a href="#typescript-best" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">TypeScript Best Practices</a>
+          <a href="#reusable-components" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">Reusable Components</a>
+        </div>
+        <a href="#advanced" class="block py-2 px-3 text-sm text-gray-700 hover:bg-earth-100 rounded transition-colors">3. Advanced GIS Features</a>
+        <div class="ml-4 space-y-1">
+          <a href="#geojson-vector" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">GeoJSON &amp; Vector Tiles</a>
+          <a href="#2d-mapping" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">2D Mapping Features</a>
+          <a href="#3d-capabilities" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">3D Capabilities</a>
+          <a href="#custom-development" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">Custom Development</a>
+          <a href="#performance" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">Performance Optimization</a>
+        </div>
+        <a href="#cloud-architecture" class="block py-2 px-3 text-sm text-gray-700 hover:bg-earth-100 rounded transition-colors">4. Cloud GIS Architecture</a>
+        <div class="ml-4 space-y-1">
+          <a href="#workflow" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">Application Workflow</a>
+          <a href="#cloud-integration" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">Cloud Integration</a>
+          <a href="#server-side" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">Server-Side Considerations</a>
+          <a href="#security" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">Security Aspects</a>
+          <a href="#deployment" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">Deployment Strategies</a>
+        </div>
+        <a href="#resources" class="block py-2 px-3 text-sm text-gray-700 hover:bg-earth-100 rounded transition-colors">5. Learning Resources</a>
+        <div class="ml-4 space-y-1">
+          <a href="#documentation" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">Official Documentation</a>
+          <a href="#tutorials" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">Online Tutorials</a>
+          <a href="#playgrounds" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">Code Playgrounds</a>
+          <a href="#community" class="block py-1 px-3 text-xs text-gray-600 hover:bg-earth-50 rounded">Community Forums</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Overlay for mobile TOC -->
+    <div id="toc-overlay" class="toc-overlay hidden"></div>
+
+    <!-- Main Content -->
+    <main class="content-offset">
+      <!-- Hero Section -->
+      <section id="hero" class="hero-gradient min-h-screen flex items-center">
+        <div class="container mx-auto px-4 sm:px-6 py-12">
+          <div class="bento-grid max-w-7xl mx-auto">
+            <!-- Left Column: Title and Subtitle -->
+            <div class="space-y-8">
+              <div class="space-y-6">
+                <h1 class="font-serif text-4xl sm:text-5xl lg:text-7xl font-semibold text-gradient leading-tight">
+                  <em>Mastering</em>
+                  <br/>
+                  MapLibre
+                </h1>
+                <p class="text-base sm:text-xl text-ocean-700 font-medium">
+                  with TypeScript and React for Cloud-Based GIS Applications
+                </p>
+              </div>
+
+              <!-- Key Highlights Grid -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
+                <div class="bg-white/80 backdrop-blur-sm p-6 rounded-lg">
+                  <i class="fas fa-map text-ocean-600 text-2xl mb-3"></i>
+                  <h3 class="font-semibold text-gray-900 mb-2">Vector Tiles</h3>
+                  <p class="text-sm text-gray-600">Efficient rendering with WebGL technology</p>
+                </div>
+                <div class="bg-white/80 backdrop-blur-sm p-6 rounded-lg">
+                  <i class="fab fa-react text-ocean-600 text-2xl mb-3"></i>
+                  <h3 class="font-semibold text-gray-900 mb-2">React Integration</h3>
+                  <p class="text-sm text-gray-600">Component-based architecture</p>
+                </div>
+                <div class="bg-white/80 backdrop-blur-sm p-6 rounded-lg">
+                  <i class="fas fa-cube text-ocean-600 text-2xl mb-3"></i>
+                  <h3 class="font-semibold text-gray-900 mb-2">3D Capabilities</h3>
+                  <p class="text-sm text-gray-600">Terrain, buildings, and sky effects</p>
+                </div>
+                <div class="bg-white/80 backdrop-blur-sm p-6 rounded-lg">
+                  <i class="fas fa-cloud text-ocean-600 text-2xl mb-3"></i>
+                  <h3 class="font-semibold text-gray-900 mb-2">Cloud Architecture</h3>
+                  <p class="text-sm text-gray-600">Scalable GIS applications</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Visual Element -->
+            <div class="relative">
+              <img src="./img/maplibre-6.webp" alt="3D city map visualization with buildings and terrain" class="w-full h-auto sm:h-96 object-cover rounded-2xl shadow-2xl" size="medium" aspect="wide" style="photo" query="3d city map visualization" referrerpolicy="no-referrer" data-modified="1" data-score="11594.00"/>
+              <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-2xl"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Foundational Concepts -->
+      <section id="foundations" class="py-20 bg-white">
+        <div class="container mx-auto px-6 max-w-6xl">
+          <div class="text-center mb-16">
+            <h2 class="font-serif text-4xl font-semibold text-ocean-800 mb-4">Foundational MapLibre Concepts</h2>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto">Understanding the core principles that make MapLibre GL JS a powerful tool for modern web mapping applications</p>
+          </div>
+
+          <div id="introduction" class="mb-16">
+            <h3 class="font-serif text-2xl font-semibold text-ocean-700 mb-6">Introduction to MapLibre GL JS</h3>
+            <div class="prose prose-lg max-w-none">
+              <p class="text-gray-700 leading-relaxed mb-6">
+                <strong>MapLibre GL JS</strong> is an open-source JavaScript library designed for rendering interactive, customizable vector maps within web browsers. It leverages <strong>WebGL technology</strong>, enabling hardware-accelerated graphics for smooth performance, particularly with large and complex datasets <a href="https://github.com/maplibre/maplibre-gl-js" class="citation">[^6]</a>
+                <a href="https://www.maplibre.org/maplibre-gl-js/docs/" class="citation">[^144]</a>.
+              </p>
+
+              <div class="bg-earth-50 p-6 rounded-lg border-l-4 border-ocean-500 mb-6">
+                <h4 class="font-semibold text-ocean-800 mb-3">Key Advantages</h4>
+                <ul class="space-y-2 text-gray-700">
+                  <li><i class="fas fa-check text-ocean-600 mr-2"></i><strong>Vector Tile Rendering:</strong> Smaller file sizes with dynamic styling capabilities</li>
+                  <li><i class="fas fa-check text-ocean-600 mr-2"></i><strong>TypeScript Support:</strong> Written in TypeScript with robust type definitions <a href="https://maplibre.org/roadmap/typescript/" class="citation">[^14]</a>
+                  </li>
+                  <li><i class="fas fa-check text-ocean-600 mr-2"></i><strong>Cross-Platform:</strong> Part of broader MapLibre ecosystem with Native versions</li>
+                  <li><i class="fas fa-check text-ocean-600 mr-2"></i><strong>Performance:</strong> WebGL-based rendering with GPU acceleration</li>
+                </ul>
+              </div>
+
+              <p class="text-gray-700 leading-relaxed">
+                Originating as a community-led fork of Mapbox GL JS in response to licensing changes, MapLibre has evolved significantly since December 2020 <a href="https://github.com/maplibre/maplibre-gl-js" class="citation">[^6]</a>
+                <a href="https://www.npmjs.com/package/maplibre-gl/v/3.1.0" class="citation">[^399]</a>. The library adheres to the MapLibre Style Specification, allowing for extensive customization of map appearance.
+              </p>
+            </div>
+          </div>
+
+          <div id="core-api" class="mb-16">
+            <h3 class="font-serif text-2xl font-semibold text-ocean-700 mb-6">Core API Understanding</h3>
+            <div class="grid lg:grid-cols-2 gap-8">
+              <div>
+                <h4 class="font-semibold text-gray-900 mb-4">The Map Object</h4>
+                <p class="text-gray-700 mb-4">
+                  The core of MapLibre revolves around the <code class="bg-gray-100 px-2 py-1 rounded text-sm">Map</code> object, which represents the map instance on a web page. This object provides methods and properties for interacting with the map&#39;s style, layers, and camera view <a href="https://www.maplibre.org/maplibre-gl-js/docs/" class="citation">[^5]</a>
+                  <a href="https://www.maplibre.org/maplibre-gl-js/docs/" class="citation">[^144]</a>.
+                </p>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                  <h5 class="font-medium text-gray-900 mb-2">MapOptions Configuration</h5>
+                  <ul class="text-sm text-gray-700 space-y-1">
+                    <li><strong>container:</strong> HTML element ID for map container</li>
+                    <li><strong>style:</strong> URL or JSON object for map styling</li>
+                    <li><strong>center:</strong> Initial geographical centerpoint [lng, lat]</li>
+                    <li><strong>zoom:</strong> Initial zoom level</li>
+                    <li><strong>pitch/bearing:</strong> Tilt and rotation angles</li>
+                  </ul>
+                </div>
+              </div>
+              <div>
+                <h4 class="font-semibold text-gray-900 mb-4">API Components</h4>
+                <div class="space-y-4">
+                  <div class="border-l-4 border-ocean-200 pl-4">
+                    <h5 class="font-medium text-gray-900">Markers &amp; Controls</h5>
+                    <p class="text-sm text-gray-600">UI elements like markers, popups, navigation controls</p>
+                  </div>
+                  <div class="border-l-4 border-ocean-200 pl-4">
+                    <h5 class="font-medium text-gray-900">Geography &amp; Geometry</h5>
+                    <p class="text-sm text-gray-600">Geographic information utilities</p>
+                  </div>
+                  <div class="border-l-4 border-ocean-200 pl-4">
+                    <h5 class="font-medium text-gray-900">User Interaction</h5>
+                    <p class="text-sm text-gray-600">Event handlers for mouse and touch input</p>
+                  </div>
+                  <div class="border-l-4 border-ocean-200 pl-4">
+                    <h5 class="font-medium text-gray-900">Sources &amp; Layers</h5>
+                    <p class="text-sm text-gray-600">Data sources and visualization layers</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="initialization" class="mb-16">
+            <h3 class="font-serif text-2xl font-semibold text-ocean-700 mb-6">Basic Map Initialization</h3>
+            <div class="bg-gray-900 rounded-lg p-6 mb-6">
+              <div class="flex items-center justify-between mb-4">
+                <h4 class="text-white font-medium">HTML Setup</h4>
+                <button class="text-gray-400 hover:text-white transition-colors">
+                  <i class="fas fa-copy"></i>
+                </button>
+              </div>
+              <pre class="text-green-400 text-sm overflow-x-auto"><code>&lt;!-- Include from CDN --&gt;
+&lt;script src=&#39;https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.js&#39;&gt;&lt;/script&gt;
+&lt;link href=&#39;https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.css&#39; rel=&#39;stylesheet&#39; /&gt;
+
+&lt;!-- Map Container --&gt;
+&lt;div id=&#34;map&#34; style=&#34;width: 100%; height: 100vh;&#34;&gt;&lt;/div&gt;</code></pre>
+            </div>
+
+            <div class="bg-gray-900 rounded-lg p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h4 class="text-white font-medium">TypeScript Initialization</h4>
+                <button class="text-gray-400 hover:text-white transition-colors">
+                  <i class="fas fa-copy"></i>
+                </button>
+              </div>
+              <pre class="text-green-400 text-sm overflow-x-auto"><code>const map = new maplibregl.Map({
+  container: &#39;map&#39;,
+  style: &#39;https://demotiles.maplibre.org/style.json&#39;,
+  center: [0, 0],
+  zoom: 1,
+  pitch: 0,
+  bearing: 0
+});</code></pre>
+            </div>
+          </div>
+
+          <!-- Common Initialization Parameters Table -->
+          <div class="overflow-x-auto mb-16">
+            <h4 class="font-semibold text-gray-900 mb-4">Common Initialization Parameters</h4>
+            <table class="w-full bg-white rounded-lg shadow-sm border border-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Parameter</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Example</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">container</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">string</td>
+                  <td class="px-6 py-4 text-sm text-gray-500">HTML element ID for map container</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">&#39;map&#39;</td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">style</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">string</td>
+                  <td class="px-6 py-4 text-sm text-gray-500">URL to MapLibre Style JSON</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">&#39;https://demotiles.maplibre.org/style.json&#39;</td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">center</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Array&lt;number&gt;</td>
+                  <td class="px-6 py-4 text-sm text-gray-500">Initial map center [lng, lat]</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">[0, 0]</td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">zoom</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">number</td>
+                  <td class="px-6 py-4 text-sm text-gray-500">Initial zoom level</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1</td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">projection</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Object</td>
+                  <td class="px-6 py-4 text-sm text-gray-500">Map projection type</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{ type: &#39;mercator&#39; }</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div id="sources-layers" class="mb-16">
+            <h3 class="font-serif text-2xl font-semibold text-ocean-700 mb-6">Understanding Sources and Layers</h3>
+            <div class="grid lg:grid-cols-2 gap-8">
+              <div class="bg-earth-50 p-6 rounded-lg">
+                <h4 class="font-semibold text-ocean-800 mb-4">Sources</h4>
+                <p class="text-gray-700 mb-4">Sources provide the geographic data displayed on the map. Common types include:</p>
+                <ul class="space-y-2 text-sm text-gray-700">
+                  <li><i class="fas fa-vector-square text-ocean-600 mr-2"></i><strong>Vector:</strong> Mapbox Vector Tiles for efficient rendering</li>
+                  <li><i class="fas fa-map text-ocean-600 mr-2"></i><strong>Raster:</strong> Image tiles for satellite imagery</li>
+                  <li><i class="fas fa-circle text-ocean-600 mr-2"></i><strong>GeoJSON:</strong> Feature collections for dynamic data</li>
+                  <li><i class="fas fa-image text-ocean-600 mr-2"></i><strong>Image/Video:</strong> Georeferenced media</li>
+                </ul>
+              </div>
+              <div class="bg-ocean-50 p-6 rounded-lg">
+                <h4 class="font-semibold text-ocean-800 mb-4">Layers</h4>
+                <p class="text-gray-700 mb-4">Layers define how source data is visualized:</p>
+                <ul class="space-y-2 text-sm text-gray-700">
+                  <li><i class="fas fa-square text-ocean-600 mr-2"></i><strong>Fill:</strong> Renders filled polygons</li>
+                  <li><i class="fas fa-minus text-ocean-600 mr-2"></i><strong>Line:</strong> Displays roads, rivers, boundaries</li>
+                  <li><i class="fas fa-font text-ocean-600 mr-2"></i><strong>Symbol:</strong> Shows icons and text labels</li>
+                  <li><i class="fas fa-circle text-ocean-600 mr-2"></i><strong>Circle:</strong> Visualizes point data</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- React &amp; TypeScript Integration -->
+      <section id="integration" class="py-20 bg-gray-50">
+        <div class="container mx-auto px-6 max-w-6xl">
+          <div class="text-center mb-16">
+            <h2 class="font-serif text-4xl font-semibold text-ocean-800 mb-4">Integrating MapLibre with React and TypeScript</h2>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto">Building modern, type-safe GIS applications with component-based architecture</p>
+          </div>
+
+          <div id="setup" class="mb-16">
+            <h3 class="font-serif text-2xl font-semibold text-ocean-700 mb-6">Setting up a React Project</h3>
+            <div class="bg-white rounded-lg p-6 shadow-sm border mb-6">
+              <h4 class="font-semibold text-gray-900 mb-4">Project Initialization</h4>
+              <div class="bg-gray-900 rounded p-4 mb-4">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-gray-400 text-sm">Terminal</span>
+                  <button class="text-gray-400 hover:text-white transition-colors">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                </div>
+                <pre class="text-green-400 text-sm"><code># Using Vite
+npm create vite@latest my-react-map --template react-ts
+
+# Install dependencies
+npm install maplibre-gl
+npm install --save-dev @types/maplibre-gl</code></pre>
+              </div>
+              <p class="text-gray-700 text-sm">
+                MapLibre GL JS includes its own TypeScript definitions (from version 2.x onwards), so the
+                <code class="bg-gray-100 px-2 py-1 rounded text-xs">@types/maplibre-gl</code> package might be redundant but can be useful for specific scenarios <a href="https://maplibre.org/roadmap/typescript/" class="citation">[^28]</a>.
+              </p>
+            </div>
+
+            <div class="bg-white rounded-lg p-6 shadow-sm border">
+              <h4 class="font-semibold text-gray-900 mb-4">Basic Map Component</h4>
+              <div class="bg-gray-900 rounded p-4">
+                <pre class="text-green-400 text-sm overflow-x-auto"><code>import React, { useEffect, useRef } from &#39;react&#39;;
+import maplibregl from &#39;maplibre-gl&#39;;
+import &#39;maplibre-gl/dist/maplibre-gl.css&#39;;
+
+const MapComponent: React.FC = () =&gt; {
+  const mapContainer = useRef<htmldivelement>(null);
+  const map = useRef<maplibregl.map |="" null="">(null);
+
+  useEffect(() =&gt; {
+    if (map.current || !mapContainer.current) return;
+    
+    map.current = new maplibregl.Map({
+      container: mapContainer.current,
+      style: &#39;https://demotiles.maplibre.org/style.json&#39;,
+      center: [0, 0],
+      zoom: 1
+    });
+    
+    // Add navigation control
+    map.current.addControl(new maplibregl.NavigationControl(), &#39;top-right&#39;);
+    
+    return () =&gt; {
+      map.current?.remove();
+      map.current = null;
+    };
+  }, []);
+
+  return </maplibregl.map></htmldivelement></code><div ref="{mapContainer}" style="{{" width:="" '100%',="" height:="" '100vh'="" }}=""><code>;
+};
+
+export default MapComponent;</code></div></pre>
+              </div>
+            </div>
+          </div>
+
+          <div id="component-libs" class="mb-16">
+            <h3 class="font-serif text-2xl font-semibold text-ocean-700 mb-6">React Component Libraries</h3>
+            <div class="grid lg:grid-cols-3 gap-6 mb-8">
+              <div class="bg-white p-6 rounded-lg shadow-sm border">
+                <div class="flex items-center mb-4">
+                  <i class="fab fa-react text-ocean-600 text-2xl mr-3"></i>
+                  <h4 class="font-semibold text-gray-900">@vis.gl/react-maplibre</h4>
+                </div>
+                <p class="text-sm text-gray-600 mb-4">Fully reactive wrapper with comprehensive component set</p>
+                <div class="text-xs text-ocean-600 font-medium">Best for: Complex UIs, enterprise applications</div>
+              </div>
+              <div class="bg-white p-6 rounded-lg shadow-sm border">
+                <div class="flex items-center mb-4">
+                  <i class="fas fa-map text-ocean-600 text-2xl mr-3"></i>
+                  <h4 class="font-semibold text-gray-900">maplibre-react-components</h4>
+                </div>
+                <p class="text-sm text-gray-600 mb-4">Lightweight library with essential components</p>
+                <div class="text-xs text-ocean-600 font-medium">Best for: Simple to moderate integrations</div>
+              </div>
+              <div class="bg-white p-6 rounded-lg shadow-sm border">
+                <div class="flex items-center mb-4">
+                  <i class="fas fa-layer-group text-ocean-600 text-2xl mr-3"></i>
+                  <h4 class="font-semibold text-gray-900">@mapcomponents/react-maplibre</h4>
+                </div>
+                <p class="text-sm text-gray-600 mb-4">Framework for declarative GIS applications</p>
+                <div class="text-xs text-ocean-600 font-medium">Best for: Complex GIS applications</div>
+              </div>
+            </div>
+
+            <div class="bg-earth-50 p-6 rounded-lg">
+              <h4 class="font-semibold text-ocean-800 mb-4">Example: Using maplibre-react-components</h4>
+              <div class="bg-gray-900 rounded p-4">
+                <pre class="text-green-400 text-sm overflow-x-auto"><code>import { RMap, RMarker, RNavigationControl } from &#39;maplibre-react-components&#39;;
+import &#39;maplibre-react-components/dist/style.css&#39;;
+
+const MyInteractiveMap = () =&gt; {
+  const mountain: [number, number] = [6.4546, 46.1067];
+  
+  return (
+    <rmap initialcenter="{mountain}" initialzoom="{8}" mapstyle="https://openmaptiles.geo.data.gouv.fr/styles/osm-bright/style.json">
+      <rmarker lnglat="{mountain}">
+      <rnavigationcontrol position="top-right">
+    </rnavigationcontrol></rmarker></rmap>
+  );
+};</code></pre>
+              </div>
+              <p class="text-sm text-gray-600 mt-4">
+                Note the distinction between reactive props (like
+                <code class="bg-gray-100 px-1 rounded">mapStyle</code>) and initial-only props (prefixed with
+                <code class="bg-gray-100 px-1 rounded">initial</code>) <a href="https://maplibre-react-components.pentatrion.com/tutorial" class="citation">[^204]</a>.
+              </p>
+            </div>
+          </div>
+
+          <div id="typescript-best" class="mb-16">
+            <h3 class="font-serif text-2xl font-semibold text-ocean-700 mb-6">TypeScript Best Practices</h3>
+            <div class="grid lg:grid-cols-2 gap-8">
+              <div class="bg-white p-6 rounded-lg shadow-sm border">
+                <h4 class="font-semibold text-gray-900 mb-4">Type Checking Benefits</h4>
+                <ul class="space-y-3 text-gray-700">
+                  <li class="flex items-start">
+                    <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                    <div>
+                      <strong>Compile-time validation</strong> of MapOptions and layer configurations
+                    </div>
+                  </li>
+                  <li class="flex items-start">
+                    <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                    <div>
+                      <strong>Autocomplete support</strong> for API methods and properties
+                    </div>
+                  </li>
+                  <li class="flex items-start">
+                    <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                    <div>
+                      <strong>GeoJSON type safety</strong> with
+                      <code class="bg-gray-100 px-1 rounded">@types/geojson</code>
+                    </div>
+                  </li>
+                  <li class="flex items-start">
+                    <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                    <div>
+                      <strong>Component prop validation</strong> for custom map components
+                    </div>
+                  </li>
+                </ul>
+              </div>
+              <div class="bg-white p-6 rounded-lg shadow-sm border">
+                <h4 class="font-semibold text-gray-900 mb-4">Recommended Setup</h4>
+                <div class="bg-gray-50 p-4 rounded">
+                  <h5 class="font-medium text-gray-900 mb-2">tsconfig.json</h5>
+                  <pre class="text-sm text-gray-700"><code>{
+  &#34;compilerOptions&#34;: {
+    &#34;strict&#34;: true,
+    &#34;skipLibCheck&#34;: true // Sometimes needed
+  }
+}</code></pre>
+                </div>
+                <div class="mt-4 text-sm text-gray-600">
+                  <p><strong>Note:</strong> Some projects might require
+                    <code class="bg-gray-100 px-1 rounded">skipLibCheck: true</code> to avoid compilation issues with MapLibre&#39;s type definitions <a href="https://github.com/maplibre/maplibre-gl-js/issues/4855" class="citation">[^375]</a>.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="reusable-components" class="mb-16">
+            <h3 class="font-serif text-2xl font-semibold text-ocean-700 mb-6">Creating Reusable Map Components</h3>
+            <div class="bg-white p-6 rounded-lg shadow-sm border mb-6">
+              <h4 class="font-semibold text-gray-900 mb-4">GeoJSONLayer Component Example</h4>
+              <div class="bg-gray-900 rounded p-4">
+                <pre class="text-green-400 text-sm overflow-x-auto"><code>import React from &#39;react&#39;;
+import { RSource, RLayer } from &#39;maplibre-react-components&#39;;
+
+interface GeoJSONLayerProps {
+  id: string;
+  data: GeoJSON.FeatureCollection;
+  paint?: any;
+  layout?: any;
+}
+
+const GeoJSONLayer: React.FC<geojsonlayerprops> = ({ 
+  id, data, paint, layout 
+}) =&gt; {
+  return (
+    &lt;&gt;
+      &lt;RSource 
+        id={`${id}-source`} 
+        type=&#34;geojson&#34; 
+        data={data} 
+      /&gt;
+      &lt;RLayer
+        id={`${id}-layer`}
+        type=&#34;fill&#34;
+        source={`${id}-source`}
+        paint={paint || {
+          &#39;fill-color&#39;: &#39;#088&#39;,
+          &#39;fill-opacity&#39;: 0.8
+        }}
+        layout={layout || {
+          &#39;visibility&#39;: &#39;visible&#39;
+        }}
+      /&gt;
+    &lt;/&gt;
+  );
+};
+
+export default GeoJSONLayer;</geojsonlayerprops></code></pre>
+              </div>
+            </div>
+
+            <div class="bg-earth-50 p-6 rounded-lg">
+              <h4 class="font-semibold text-ocean-800 mb-4">Component Architecture Benefits</h4>
+              <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h5 class="font-medium text-gray-900 mb-2">Encapsulation</h5>
+                  <p class="text-sm text-gray-600">Each component manages its own data fetching, styling, and interaction logic</p>
+                </div>
+                <div>
+                  <h5 class="font-medium text-gray-900 mb-2">Composability</h5>
+                  <p class="text-sm text-gray-600">Components can be combined to build complex mapping applications</p>
+                </div>
+                <div>
+                  <h5 class="font-medium text-gray-900 mb-2">Type Safety</h5>
+                  <p class="text-sm text-gray-600">TypeScript interfaces ensure proper usage throughout the application</p>
+                </div>
+                <div>
+                  <h5 class="font-medium text-gray-900 mb-2">Maintainability</h5>
+                  <p class="text-sm text-gray-600">Clean separation of concerns and reusable patterns</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Advanced GIS Features -->
+      <section id="advanced" class="py-20 bg-white">
+        <div class="container mx-auto px-6 max-w-6xl">
+          <div class="text-center mb-16">
+            <h2 class="font-serif text-4xl font-semibold text-ocean-800 mb-4">Advanced MapLibre Features for GIS</h2>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto">Exploring the full potential of web mapping with advanced visualization and performance techniques</p>
+          </div>
+
+          <div id="geojson-vector" class="mb-16">
+            <h3 class="font-serif text-2xl font-semibold text-ocean-700 mb-6">Working with GeoJSON and Vector Tiles</h3>
+            <div class="grid lg:grid-cols-2 gap-8 mb-8">
+              <div class="bg-earth-50 p-6 rounded-lg">
+                <h4 class="font-semibold text-ocean-800 mb-4">GeoJSON Advantages</h4>
+                <ul class="space-y-2 text-gray-700">
+                  <li><i class="fas fa-check text-green-500 mr-2"></i>Human-readable format</li>
+                  <li><i class="fas fa-check text-green-500 mr-2"></i>Easy to generate dynamically</li>
+                  <li><i class="fas fa-check text-green-500 mr-2"></i>Supports complex geometries</li>
+                  <li><i class="fas fa-check text-green-500 mr-2"></i>Ideal for small to medium datasets</li>
+                </ul>
+              </div>
+              <div class="bg-ocean-50 p-6 rounded-lg">
+                <h4 class="font-semibold text-ocean-800 mb-4">Vector Tile Benefits</h4>
+                <ul class="space-y-2 text-gray-700">
+                  <li><i class="fas fa-check text-green-500 mr-2"></i>Efficient for large datasets</li>
+                  <li><i class="fas fa-check text-green-500 mr-2"></i>Dynamic tile loading</li>
+                  <li><i class="fas fa-check text-green-500 mr-2"></i>Reduced bandwidth usage</li>
+                  <li><i class="fas fa-check text-green-500 mr-2"></i>Better performance at scale</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-sm border">
+              <h4 class="font-semibold text-gray-900 mb-4">GeoJSON Implementation Example</h4>
+              <div class="bg-gray-900 rounded p-4">
+                <pre class="text-green-400 text-sm overflow-x-auto"><code>// Adding earthquake data from USGS
+map.addSource(&#39;earthquakes&#39;, {
+  type: &#39;geojson&#39;,
+  data: &#39;https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson&#39;
+});
+
+map.addLayer({
+  id: &#39;earthquakes-layer&#39;,
+  type: &#39;circle&#39;,
+  source: &#39;earthquakes&#39;,
+  paint: {
+    &#39;circle-radius&#39;: [
+      &#39;interpolate&#39;, [&#39;linear&#39;], [&#39;get&#39;, &#39;mag&#39;],
+      0, 4,  // Magnitude 0 → radius 4px
+      10, 20  // Magnitude 10 → radius 20px
+    ],
+    &#39;circle-color&#39;: [
+      &#39;interpolate&#39;, [&#39;linear&#39;], [&#39;get&#39;, &#39;mag&#39;],
+      0, &#39;#00ff00&#39;,
+      5, &#39;#ffaa00&#39;,
+      10, &#39;#ff0000&#39;
+    ]
+  }
+});</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <div id="2d-mapping" class="mb-16">
+            <h3 class="font-serif text-2xl font-semibold text-ocean-700 mb-6">Implementing 2D Mapping Features</h3>
+            <div class="grid lg:grid-cols-3 gap-6 mb-8">
+              <div class="bg-gradient-to-br from-earth-100 to-earth-200 p-6 rounded-lg">
+                <i class="fas fa-palette text-ocean-600 text-3xl mb-4"></i>
+                <h4 class="font-semibold text-gray-900 mb-2">Data-Driven Styling</h4>
+                <p class="text-sm text-gray-700">Use feature properties to dynamically style map elements</p>
+              </div>
+              <div class="bg-gradient-to-br from-ocean-100 to-ocean-200 p-6 rounded-lg">
+                <i class="fas fa-mouse-pointer text-ocean-600 text-3xl mb-4"></i>
+                <h4 class="font-semibold text-gray-900 mb-2">Interactive Features</h4>
+                <p class="text-sm text-gray-700">Hover effects, click interactions, and popup information</p>
+              </div>
+              <div class="bg-gradient-to-br from-gray-100 to-gray-200 p-6 rounded-lg">
+                <i class="fas fa-layer-group text-ocean-600 text-3xl mb-4"></i>
+                <h4 class="font-semibold text-gray-900 mb-2">Layer Management</h4>
+                <p class="text-sm text-gray-700">Toggle visibility, reorder layers, and manage state</p>
+              </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-sm border">
+              <h4 class="font-semibold text-gray-900 mb-4">Interactive Feature Highlighting</h4>
+              <div class="bg-gray-900 rounded p-4">
+                <pre class="text-green-400 text-sm overflow-x-auto"><code>// Highlight countries on hover
+map.on(&#39;mousemove&#39;, &#39;countries-fill&#39;, (e) =&gt; {
+  // Change the cursor style
+  map.getCanvas().style.cursor = &#39;pointer&#39;;
+  
+  // Get the hovered feature
+  const feature = e.features[0];
+  
+  // Update the feature state to highlight it
+  map.setFeatureState(
+    { source: &#39;countries&#39;, id: feature.id },
+    { hover: true }
+  );
+});
+
+map.on(&#39;mouseleave&#39;, &#39;countries-fill&#39;, () =&gt; {
+  map.getCanvas().style.cursor = &#39;&#39;;
+  // Reset all feature states
+  map.setFeatureState(
+    { source: &#39;countries&#39; },
+    { hover: false }
+  );
+});</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <div id="3d-capabilities" class="mb-16">
+            <h3 class="font-serif text-2xl font-semibold text-ocean-700 mb-6">Exploring 3D Mapping Capabilities</h3>
+            <div class="grid lg:grid-cols-2 gap-8 mb-8">
+              <div>
+                <img src="img/map-3d-graphic.png" alt="3D terrain visualization with buildings and mountains" class="w-full h-64 object-cover rounded-lg shadow-sm" size="medium" aspect="wide" style="photo" query="3D terrain buildings mountains MapLibre" referrerpolicy="no-referrer" data-modified="1" data-score="11584.00"/>
+              </div>
+              <div class="space-y-6">
+                <div class="bg-earth-50 p-6 rounded-lg">
+                  <h4 class="font-semibold text-ocean-800 mb-3">3D Terrain</h4>
+                  <p class="text-gray-700 text-sm mb-3">Elevation data with realistic rendering</p>
+                  <div class="bg-gray-900 rounded p-3">
+                    <pre class="text-green-400 text-xs"><code>map.addSource(&#39;terrain-dem&#39;, {
+  type: &#39;raster-dem&#39;,
+  url: &#39;https://demotiles.maplibre.org/terrain-tiles/tiles.json&#39;
+});
+map.setTerrain({ source: &#39;terrain-dem&#39; });</code></pre>
+                  </div>
+                </div>
+                <div class="bg-ocean-50 p-6 rounded-lg">
+                  <h4 class="font-semibold text-ocean-800 mb-3">Building Extrusions</h4>
+                  <p class="text-gray-700 text-sm mb-3">3D buildings with height properties</p>
+                  <div class="bg-gray-900 rounded p-3">
+                    <pre class="text-green-400 text-xs"><code>&#39;fill-extrusion-height&#39;: [
+  &#39;get&#39;, &#39;height&#39;
+],
+&#39;fill-extrusion-base&#39;: 0</code></pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-sm border">
+              <h4 class="font-semibold text-gray-900 mb-4">Complete 3D Scene Setup</h4>
+              <div class="bg-gray-900 rounded p-4">
+                <pre class="text-green-400 text-sm overflow-x-auto"><code>// Add terrain source
+map.addSource(&#39;terrain-dem&#39;, {
+  type: &#39;raster-dem&#39;,
+  url: &#39;maptiler://maps/hybrid&#39;,
+  tileSize: 256,
+  maxzoom: 14
+});
+
+// Enable 3D terrain
+map.setTerrain({
+  source: &#39;terrain-dem&#39;,
+  exaggeration: 1.5
+});
+
+// Add sky layer for atmosphere
+map.addLayer({
+  id: &#39;sky&#39;,
+  type: &#39;sky&#39;,
+  paint: {
+    &#39;sky-type&#39;: &#39;atmosphere&#39;,
+    &#39;sky-atmosphere-color&#39;: &#39;rgba(85, 151, 210, 0.5)&#39;
+  }
+});
+
+// Add building layer with extrusion
+map.addLayer({
+  id: &#39;buildings-3d&#39;,
+  type: &#39;fill-extrusion&#39;,
+  source: &#39;buildings&#39;,
+  &#39;source-layer&#39;: &#39;building&#39;,
+  paint: {
+    &#39;fill-extrusion-height&#39;: [&#39;get&#39;, &#39;height&#39;],
+    &#39;fill-extrusion-base&#39;: 0,
+    &#39;fill-extrusion-color&#39;: &#39;#aaa&#39;
+  }
+});</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <div id="performance" class="mb-16">
+            <h3 class="font-serif text-2xl font-semibold text-ocean-700 mb-6">Performance Optimization Techniques</h3>
+            <div class="grid lg:grid-cols-2 gap-8">
+              <div class="space-y-6">
+                <div class="bg-green-50 border border-green-200 p-6 rounded-lg">
+                  <h4 class="font-semibold text-green-800 mb-3">
+                    <i class="fas fa-rocket mr-2"></i>Optimization Strategies
+                  </h4>
+                  <ul class="space-y-2 text-sm text-green-700">
+                    <li><strong>Vector Tiles:</strong> Use for large datasets instead of GeoJSON</li>
+                    <li><strong>Geometry Simplification:</strong> Reduce vertex count at lower zoom levels</li>
+                    <li><strong>Efficient Expressions:</strong> Simplify data-driven styling logic</li>
+                    <li><strong>Layer Management:</strong> Hide unused layers instead of removing</li>
+                  </ul>
+                </div>
+                <div class="bg-blue-50 border border-blue-200 p-6 rounded-lg">
+                  <h4 class="font-semibold text-blue-800 mb-3">
+                    <i class="fas fa-tools mr-2"></i>Performance Monitoring
+                  </h4>
+                  <ul class="space-y-2 text-sm text-blue-700">
+                    <li><strong>Browser DevTools:</strong> Performance panel for profiling</li>
+                    <li><strong>Frame Rate Monitoring:</strong> Track rendering performance</li>
+                    <li><strong>Memory Usage:</strong> Check for memory leaks</li>
+                    <li><strong>Network Analysis:</strong> Optimize tile loading</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="bg-white p-6 rounded-lg shadow-sm border">
+                <h4 class="font-semibold text-gray-900 mb-4">Layer Performance Example</h4>
+                <div class="bg-gray-900 rounded p-4">
+                  <pre class="text-green-400 text-sm overflow-x-auto"><code>// Efficient layer visibility toggling
+function toggleLayer(layerId, isVisible) {
+  map.setLayoutProperty(
+    layerId, 
+    &#39;visibility&#39;, 
+    isVisible ? &#39;visible&#39; : &#39;none&#39;
+  );
+}
+
+// Instead of:
+// if (isVisible) {
+//   map.addLayer(layerConfig);
+// } else {
+//   map.removeLayer(layerId);
+// }</code></pre>
+                </div>
+                <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
+                  <h5 class="font-medium text-yellow-800 mb-2">Performance Tip</h5>
+                  <p class="text-sm text-yellow-700">
+                    Use
+                    <code class="bg-yellow-100 px-1 rounded">setLayoutProperty</code> for visibility changes rather than adding/removing layers repeatedly. This maintains the layer state while improving performance.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Cloud Architecture -->
+      <section id="cloud-architecture" class="py-20 bg-gray-50">
+        <div class="container mx-auto px-6 max-w-6xl">
+          <div class="text-center mb-16">
+            <h2 class="font-serif text-4xl font-semibold text-ocean-800 mb-4">Cloud-Based GIS Application Architecture</h2>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto">Building scalable, secure, and performant GIS applications in the cloud</p>
+          </div>
+
+          <div id="workflow" class="mb-16">
+            <h3 class="font-serif text-2xl font-semibold text-ocean-700 mb-6">Designing the Application Workflow</h3>
+            <div class="bg-white p-8 rounded-lg shadow-sm border mb-8">
+              <div class="grid lg:grid-cols-4 gap-6">
+                <div class="text-center">
+                  <div class="w-16 h-16 bg-ocean-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-user text-ocean-600 text-2xl"></i>
+                  </div>
+                  <h4 class="font-semibold text-gray-900 mb-2">User Access</h4>
+                  <p class="text-sm text-gray-600">React frontend loads with MapLibre component</p>
+                </div>
+                <div class="text-center">
+                  <div class="w-16 h-16 bg-earth-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-map text-earth-600 text-2xl"></i>
+                  </div>
+                  <h4 class="font-semibold text-gray-900 mb-2">Map Initialization</h4>
+                  <p class="text-sm text-gray-600">Base style loads from cloud storage/CDN</p>
+                </div>
+                <div class="text-center">
+                  <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-mouse text-green-600 text-2xl"></i>
+                  </div>
+                  <h4 class="font-semibold text-gray-900 mb-2">User Interaction</h4>
+                  <p class="text-sm text-gray-600">Events trigger API calls and state updates</p>
+                </div>
+                <div class="text-center">
+                  <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-database text-blue-600 text-2xl"></i>
+                  </div>
+                  <h4 class="font-semibold text-gray-900 mb-2">Data Processing</h4>
+                  <p class="text-sm text-gray-600">Cloud services handle spatial queries and processing</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-earth-50 p-6 rounded-lg">
+              <h4 class="font-semibold text-ocean-800 mb-4">Typical Data Flow</h4>
+              <div class="space-y-4">
+                <div class="flex items-start">
+                  <div class="w-8 h-8 bg-ocean-600 text-white rounded-full flex items-center justify-center text-sm font-bold mr-4 mt-1">1</div>
+                  <div>
+                    <h5 class="font-medium text-gray-900">User pans/zooms the map</h5>
+                    <p class="text-sm text-gray-600">New viewport coordinates are calculated</p>
+                  </div>
+                </div>
+                <div class="flex items-start">
+                  <div class="w-8 h-8 bg-ocean-600 text-white rounded-full flex items-center justify-center text-sm font-bold mr-4 mt-1">2</div>
+                  <div>
+                    <h5 class="font-medium text-gray-900">Application requests new tiles</h5>
+                    <p class="text-sm text-gray-600">Vector tiles loaded from cloud storage/CDN</p>
+                  </div>
+                </div>
+                <div class="flex items-start">
+                  <div class="w-8 h-8 bg-ocean-600 text-white rounded-full flex items-center justify-center text-sm font-bold mr-4 mt-1">3</div>
+                  <div>
+                    <h5 class="font-medium text-gray-900">User clicks on feature</h5>
+                    <p class="text-sm text-gray-600">API call fetches detailed information</p>
+                  </div>
+                </div>
+                <div class="flex items-start">
+                  <div class="w-8 h-8 bg-ocean-600 text-white rounded-full flex items-center justify-center text-sm font-bold mr-4 mt-1">4</div>
+                  <div>
+                    <h5 class="font-medium text-gray-900">Data updates application state</h5>
+                    <p class="text-sm text-gray-600">React components re-render with new data</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="cloud-integration" class="mb-16">
+            <h3 class="font-serif text-2xl font-semibold text-ocean-700 mb-6">Integrating with Cloud Data Sources</h3>
+            <div class="grid lg:grid-cols-3 gap-6 mb-8">
+              <div class="bg-white p-6 rounded-lg shadow-sm border">
+                <div class="flex items-center mb-4">
+                  <i class="fab fa-aws text-orange-500 text-2xl mr-3"></i>
+                  <h4 class="font-semibold text-gray-900">AWS Services</h4>
+                </div>
+                <ul class="text-sm text-gray-700 space-y-2">
+                  <li><i class="fas fa-cube text-orange-400 mr-2"></i>S3 for tile storage</li>
+                  <li><i class="fas fa-server text-orange-400 mr-2"></i>EC2 for tile servers</li>
+                  <li><i class="fas fa-database text-orange-400 mr-2"></i>RDS with PostGIS</li>
+                  <li><i class="fas fa-bolt text-orange-400 mr-2"></i>Lambda for APIs</li>
+                </ul>
+              </div>
+              <div class="bg-white p-6 rounded-lg shadow-sm border">
+                <div class="flex items-center mb-4">
+                  <i class="fab fa-google text-blue-500 text-2xl mr-3"></i>
+                  <h4 class="font-semibold text-gray-900">Google Cloud</h4>
+                </div>
+                <ul class="text-sm text-gray-700 space-y-2">
+                  <li><i class="fas fa-archive text-blue-400 mr-2"></i>Cloud Storage for tiles</li>
+                  <li><i class="fas fa-cloud text-blue-400 mr-2"></i>Cloud SQL with PostGIS</li>
+                  <li><i class="fas fa-function text-blue-400 mr-2"></i>Cloud Functions</li>
+                  <li><i class="fas fa-map text-blue-400 mr-2"></i>Maps JavaScript API</li>
+                </ul>
+              </div>
+              <div class="bg-white p-6 rounded-lg shadow-sm border">
+                <div class="flex items-center mb-4">
+                  <i class="fab fa-microsoft text-blue-600 text-2xl mr-3"></i>
+                  <h4 class="font-semibold text-gray-900">Azure</h4>
+                </div>
+                <ul class="text-sm text-gray-700 space-y-2">
+                  <li><i class="fas fa-box text-blue-400 mr-2"></i>Blob Storage for tiles</li>
+                  <li><i class="fas fa-database text-blue-400 mr-2"></i>Azure Database for PostgreSQL</li>
+                  <li><i class="fas fa-cog text-blue-400 mr-2"></i>Azure Functions</li>
+                  <li><i class="fas fa-globe text-blue-400 mr-2"></i>Azure Maps</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-sm border">
+              <h4 class="font-semibold text-gray-900 mb-4">Sample Cloud Integration Architecture</h4>
+              <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h5 class="font-medium text-gray-900 mb-3">Frontend Services</h5>
+                  <div class="space-y-3">
+                    <div class="bg-gray-50 p-3 rounded border-l-4 border-ocean-500">
+                      <h6 class="font-medium text-gray-900 text-sm">CDN Distribution</h6>
+                      <p class="text-xs text-gray-600">React app and MapLibre library</p>
+                    </div>
+                    <div class="bg-gray-50 p-3 rounded border-l-4 border-ocean-500">
+                      <h6 class="font-medium text-gray-900 text-sm">API Gateway</h6>
+                      <p class="text-xs text-gray-600">Authentication and routing</p>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h5 class="font-medium text-gray-900 mb-3">Backend Services</h5>
+                  <div class="space-y-3">
+                    <div class="bg-gray-50 p-3 rounded border-l-4 border-earth-500">
+                      <h6 class="font-medium text-gray-900 text-sm">Tile Server</h6>
+                      <p class="text-xs text-gray-600">Vector and raster tile generation</p>
+                    </div>
+                    <div class="bg-gray-50 p-3 rounded border-l-4 border-earth-500">
+                      <h6 class="font-medium text-gray-900 text-sm">Spatial Database</h6>
+                      <p class="text-xs text-gray-600">PostGIS with geospatial queries</p>
+                    </div>
+                    <div class="bg-gray-50 p-3 rounded border-l-4 border-earth-500">
+                      <h6 class="font-medium text-gray-900 text-sm">Processing Engine</h6>
+                      <p class="text-xs text-gray-600">Data transformation and analysis</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="security" class="mb-16">
+            <h3 class="font-serif text-2xl font-semibold text-ocean-700 mb-6">Security Aspects in Cloud GIS</h3>
+            <div class="grid lg:grid-cols-2 gap-8">
+              <div class="space-y-6">
+                <div class="bg-red-50 border border-red-200 p-6 rounded-lg">
+                  <h4 class="font-semibold text-red-800 mb-4">
+                    <i class="fas fa-shield-alt mr-2"></i>Data Security
+                  </h4>
+                  <ul class="space-y-2 text-sm text-red-700">
+                    <li><strong>Encryption at Rest:</strong> Encrypt sensitive geospatial data in databases and storage</li>
+                    <li><strong>Encryption in Transit:</strong> Use HTTPS/TLS for all communications</li>
+                    <li><strong>API Key Management:</strong> Store keys securely on server-side</li>
+                  </ul>
+                </div>
+                <div class="bg-yellow-50 border border-yellow-200 p-6 rounded-lg">
+                  <h4 class="font-semibold text-yellow-800 mb-4">
+                    <i class="fas fa-user-shield mr-2"></i>Authentication &amp; Authorization
+                  </h4>
+                  <ul class="space-y-2 text-sm text-yellow-700">
+                    <li><strong>Identity Providers:</strong> Integrate with Auth0, Cognito, or custom solutions</li>
+                    <li><strong>Role-Based Access:</strong> Implement RBAC for geospatial data</li>
+                    <li><strong>Session Management:</strong> Secure cookie handling and token storage</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="space-y-6">
+                <div class="bg-blue-50 border border-blue-200 p-6 rounded-lg">
+                  <h4 class="font-semibold text-blue-800 mb-4">
+                    <i class="fas fa-code mr-2"></i>API Security
+                  </h4>
+                  <ul class="space-y-2 text-sm text-blue-700">
+                    <li><strong>Input Validation:</strong> Sanitize all user inputs</li>
+                    <li><strong>Rate Limiting:</strong> Prevent abuse and DoS attacks</li>
+                    <li><strong>CORS Configuration:</strong> Restrict cross-origin requests</li>
+                  </ul>
+                </div>
+                <div class="bg-green-50 border border-green-200 p-6 rounded-lg">
+                  <h4 class="font-semibold text-green-800 mb-4">
+                    <i class="fas fa-server mr-2"></i>Infrastructure Security
+                  </h4>
+                  <ul class="space-y-2 text-sm text-green-700">
+                    <li><strong>Network Security:</strong> Configure firewalls and security groups</li>
+                    <li><strong>Patch Management:</strong> Keep software components updated</li>
+                    <li><strong>Monitoring:</strong> Security auditing and vulnerability assessment</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="deployment" class="mb-16">
+            <h3 class="font-serif text-2xl font-semibold text-ocean-700 mb-6">Deployment Strategies</h3>
+            <div class="grid lg:grid-cols-3 gap-6">
+              <div class="bg-white p-6 rounded-lg shadow-sm border">
+                <div class="text-center mb-4">
+                  <i class="fas fa-cloud text-blue-500 text-4xl"></i>
+                </div>
+                <h4 class="font-semibold text-gray-900 text-center mb-3">Static Hosting</h4>
+                <p class="text-sm text-gray-600 text-center mb-4">React frontend deployed to cloud storage with CDN</p>
+                <div class="bg-gray-50 p-3 rounded">
+                  <ul class="text-xs text-gray-600 space-y-1">
+                    <li>• Amazon S3 + CloudFront</li>
+                    <li>• Google Cloud Storage + CDN</li>
+                    <li>• Azure Blob Storage + CDN</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="bg-white p-6 rounded-lg shadow-sm border">
+                <div class="text-center mb-4">
+                  <i class="fab fa-docker text-blue-600 text-4xl"></i>
+                </div>
+                <h4 class="font-semibold text-gray-900 text-center mb-3">Containerization</h4>
+                <p class="text-sm text-gray-600 text-center mb-4">Docker containers with Kubernetes orchestration</p>
+                <div class="bg-gray-50 p-3 rounded">
+                  <ul class="text-xs text-gray-600 space-y-1">
+                    <li>• AWS EKS</li>
+                    <li>• Google GKE</li>
+                    <li>• Azure AKS</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="bg-white p-6 rounded-lg shadow-sm border">
+                <div class="text-center mb-4">
+                  <i class="fas fa-bolt text-yellow-500 text-4xl"></i>
+                </div>
+                <h4 class="font-semibold text-gray-900 text-center mb-3">Serverless</h4>
+                <p class="text-sm text-gray-600 text-center mb-4">Functions-as-a-Service for backend components</p>
+                <div class="bg-gray-50 p-3 rounded">
+                  <ul class="text-xs text-gray-600 space-y-1">
+                    <li>• AWS Lambda</li>
+                    <li>• Google Cloud Functions</li>
+                    <li>• Azure Functions</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-earth-50 p-6 rounded-lg mt-8">
+              <h4 class="font-semibold text-ocean-800 mb-4">CI/CD Pipeline Example</h4>
+              <div class="grid md:grid-cols-5 gap-4">
+                <div class="text-center">
+                  <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <i class="fab fa-github text-blue-600"></i>
+                  </div>
+                  <h5 class="font-medium text-gray-900 text-sm">Code Commit</h5>
+                </div>
+                <div class="text-center">
+                  <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <i class="fas fa-play text-yellow-600"></i>
+                  </div>
+                  <h5 class="font-medium text-gray-900 text-sm">Build</h5>
+                </div>
+                <div class="text-center">
+                  <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <i class="fas fa-vial text-green-600"></i>
+                  </div>
+                  <h5 class="font-medium text-gray-900 text-sm">Test</h5>
+                </div>
+                <div class="text-center">
+                  <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <i class="fas fa-rocket text-purple-600"></i>
+                  </div>
+                  <h5 class="font-medium text-gray-900 text-sm">Deploy</h5>
+                </div>
+                <div class="text-center">
+                  <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <i class="fas fa-chart-line text-red-600"></i>
+                  </div>
+                  <h5 class="font-medium text-gray-900 text-sm">Monitor</h5>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Learning Resources -->
+      <section id="resources" class="py-20 bg-white">
+        <div class="container mx-auto px-6 max-w-6xl">
+          <div class="text-center mb-16">
+            <h2 class="font-serif text-4xl font-semibold text-ocean-800 mb-4">Interactive Learning &amp; Community Resources</h2>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto">Accelerate your MapLibre mastery with curated resources and community support</p>
+          </div>
+
+          <div id="documentation" class="mb-16">
+            <h3 class="font-serif text-2xl font-semibold text-ocean-700 mb-6">Official Documentation and Examples</h3>
+            <div class="grid lg:grid-cols-2 gap-8">
+              <div class="bg-earth-50 p-6 rounded-lg">
+                <h4 class="font-semibold text-ocean-800 mb-4">
+                  <i class="fas fa-book text-ocean-600 mr-2"></i>Documentation Structure
+                </h4>
+                <div class="space-y-3">
+                  <div class="border-l-4 border-ocean-300 pl-4">
+                    <h5 class="font-medium text-gray-900">API Reference</h5>
+                    <p class="text-sm text-gray-600">Complete class and method documentation</p>
+                  </div>
+                  <div class="border-l-4 border-ocean-300 pl-4">
+                    <h5 class="font-medium text-gray-900">Getting Started</h5>
+                    <p class="text-sm text-gray-600">Step-by-step setup guides</p>
+                  </div>
+                  <div class="border-l-4 border-ocean-300 pl-4">
+                    <h5 class="font-medium text-gray-900">Examples Gallery</h5>
+                    <p class="text-sm text-gray-600">Interactive code examples</p>
+                  </div>
+                  <div class="border-l-4 border-ocean-300 pl-4">
+                    <h5 class="font-medium text-gray-900">Migration Guides</h5>
+                    <p class="text-sm text-gray-600">From Mapbox GL JS and other libraries</p>
+                  </div>
+                </div>
+              </div>
+              <div class="bg-white p-6 rounded-lg shadow-sm border">
+                <h4 class="font-semibold text-gray-900 mb-4">
+                  <i class="fas fa-code text-ocean-600 mr-2"></i>Interactive Examples
+                </h4>
+                <div class="grid grid-cols-2 gap-3">
+                  <a href="#" class="block p-3 bg-gray-50 hover:bg-gray-100 rounded transition-colors">
+                    <div class="font-medium text-gray-900 text-sm">Markers &amp; Popups</div>
+                    <div class="text-xs text-gray-600">Interactive points</div>
+                  </a>
+                  <a href="#" class="block p-3 bg-gray-50 hover:bg-gray-100 rounded transition-colors">
+                    <div class="font-medium text-gray-900 text-sm">Layer Types</div>
+                    <div class="text-xs text-gray-600">Fill, line, symbol</div>
+                  </a>
+                  <a href="#" class="block p-3 bg-gray-50 hover:bg-gray-100 rounded transition-colors">
+                    <div class="font-medium text-gray-900 text-sm">3D Features</div>
+                    <div class="text-xs text-gray-600">Terrain &amp; buildings</div>
+                  </a>
+                  <a href="#" class="block p-3 bg-gray-50 hover:bg-gray-100 rounded transition-colors">
+                    <div class="font-medium text-gray-900 text-sm">User Interaction</div>
+                    <div class="text-xs text-gray-600">Events &amp; controls</div>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="tutorials" class="mb-16">
+            <h3 class="font-serif text-2xl font-semibold text-ocean-700 mb-6">Recommended Online Tutorials</h3>
+            <div class="grid lg:grid-cols-3 gap-6">
+              <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg border border-blue-200">
+                <div class="flex items-center mb-4">
+                  <i class="fab fa-youtube text-red-500 text-2xl mr-3"></i>
+                  <h4 class="font-semibold text-gray-900">Video Courses</h4>
+                </div>
+                <ul class="space-y-2 text-sm text-gray-700">
+                  <li><i class="fas fa-play-circle text-red-400 mr-2"></i>Udemy: Web Mapping Fundamentals</li>
+                  <li><i class="fas fa-play-circle text-red-400 mr-2"></i>Coursera: GIS Programming</li>
+                  <li><i class="fas fa-play-circle text-red-400 mr-2"></i>YouTube: MapLibre Tutorial Series</li>
+                  <li><i class="fas fa-play-circle text-red-400 mr-2"></i>Pluralsight: React + MapLibre</li>
+                </ul>
+              </div>
+              <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg border border-green-200">
+                <div class="flex items-center mb-4">
+                  <i class="fas fa-blog text-green-600 text-2xl mr-3"></i>
+                  <h4 class="font-semibold text-gray-900">Blog Tutorials</h4>
+                </div>
+                <ul class="space-y-2 text-sm text-gray-700">
+                  <li><i class="fas fa-pen text-green-500 mr-2"></i>MapTiler Documentation <a href="https://docs.maptiler.com/react/maplibre-gl-js/how-to-use-maplibre-gl-js/" class="citation">[^421]</a>
+                  </li>
+                  <li><i class="fas fa-pen text-green-500 mr-2"></i>Stadia Maps Tutorials <a href="https://docs.stadiamaps.com/tutorials/getting-started-with-maplibre-react-components/" class="citation">[^586]</a>
+                  </li>
+                  <li><i class="fas fa-pen text-green-500 mr-2"></i>GIS Programming Blogs</li>
+                  <li><i class="fas fa-pen text-green-500 mr-2"></i>Developer Community Posts</li>
+                </ul>
+              </div>
+              <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-lg border border-purple-200">
+                <div class="flex items-center mb-4">
+                  <i class="fas fa-graduation-cap text-purple-600 text-2xl mr-3"></i>
+                  <h4 class="font-semibold text-gray-900">Learning Paths</h4>
+                </div>
+                <ul class="space-y-2 text-sm text-gray-700">
+                  <li><i class="fas fa-route text-purple-500 mr-2"></i>Beginner to Advanced GIS</li>
+                  <li><i class="fas fa-route text-purple-500 mr-2"></i>React + TypeScript Integration</li>
+                  <li><i class="fas fa-route text-purple-500 mr-2"></i>Cloud GIS Deployment</li>
+                  <li><i class="fas fa-route text-purple-500 mr-2"></i>Performance Optimization</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div id="playgrounds" class="mb-16">
+            <h3 class="font-serif text-2xl font-semibold text-ocean-700 mb-6">Interactive Code Playgrounds</h3>
+            <div class="bg-white p-8 rounded-lg shadow-sm border">
+              <div class="grid lg:grid-cols-2 gap-8">
+                <div>
+                  <h4 class="font-semibold text-gray-900 mb-4">Online Development Environments</h4>
+                  <div class="space-y-4">
+                    <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+                      <i class="fas fa-cube text-orange-500 text-2xl mr-4"></i>
+                      <div>
+                        <h5 class="font-medium text-gray-900">CodeSandbox</h5>
+                        <p class="text-sm text-gray-600">React + TypeScript templates available <a href="https://codesandbox.io/s/maplibre-react-typescript-4e104s" class="citation">[^590]</a>
+                        </p>
+                      </div>
+                    </div>
+                    <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+                      <i class="fab fa-jsfiddle text-blue-500 text-2xl mr-4"></i>
+                      <div>
+                        <h5 class="font-medium text-gray-900">JSFiddle</h5>
+                        <p class="text-sm text-gray-600">Quick prototyping and sharing</p>
+                      </div>
+                    </div>
+                    <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+                      <i class="fas fa-cubes text-purple-500 text-2xl mr-4"></i>
+                      <div>
+                        <h5 class="font-medium text-gray-900">StackBlitz</h5>
+                        <p class="text-sm text-gray-600">Full-stack JavaScript environment</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-gray-900 mb-4">Benefits of Online Playgrounds</h4>
+                  <div class="space-y-3">
+                    <div class="flex items-start">
+                      <i class="fas fa-zap text-yellow-500 mr-3 mt-1"></i>
+                      <div>
+                        <h5 class="font-medium text-gray-900">Instant Setup</h5>
+                        <p class="text-sm text-gray-600">No local environment configuration needed</p>
+                      </div>
+                    </div>
+                    <div class="flex items-start">
+                      <i class="fas fa-share text-blue-500 mr-3 mt-1"></i>
+                      <div>
+                        <h5 class="font-medium text-gray-900">Easy Sharing</h5>
+                        <p class="text-sm text-gray-600">Share examples with community members</p>
+                      </div>
+                    </div>
+                    <div class="flex items-start">
+                      <i class="fas fa-flask text-green-500 mr-3 mt-1"></i>
+                      <div>
+                        <h5 class="font-medium text-gray-900">Rapid Experimentation</h5>
+                        <p class="text-sm text-gray-600">Test ideas and see results immediately</p>
+                      </div>
+                    </div>
+                    <div class="flex items-start">
+                      <i class="fas fa-users text-purple-500 mr-3 mt-1"></i>
+                      <div>
+                        <h5 class="font-medium text-gray-900">Community Templates</h5>
+                        <p class="text-sm text-gray-600">Access pre-built project templates</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="community" class="mb-16">
+            <h3 class="font-serif text-2xl font-semibold text-ocean-700 mb-6">Community Forums and Support</h3>
+            <div class="grid lg:grid-cols-2 gap-8">
+              <div class="space-y-6">
+                <div class="bg-white p-6 rounded-lg shadow-sm border">
+                  <h4 class="font-semibold text-gray-900 mb-4">
+                    <i class="fab fa-github text-gray-800 text-2xl mr-3"></i>GitHub Community
+                  </h4>
+                  <div class="space-y-3">
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded">
+                      <span class="text-sm font-medium text-gray-900">Discussions</span>
+                      <span class="text-xs text-gray-600">Primary forum for questions</span>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded">
+                      <span class="text-sm font-medium text-gray-900">Issues</span>
+                      <span class="text-xs text-gray-600">Bug reports &amp; feature requests</span>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded">
+                      <span class="text-sm font-medium text-gray-900">Pull Requests</span>
+                      <span class="text-xs text-gray-600">Contribute to development</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm border">
+                  <h4 class="font-semibold text-gray-900 mb-4">
+                    <i class="fab fa-slack text-purple-600 text-2xl mr-3"></i>Real-time Chat
+                  </h4>
+                  <p class="text-sm text-gray-700 mb-4">Join the MapLibre community on Slack or Discord for instant help and discussion.</p>
+                  <div class="bg-purple-50 p-3 rounded">
+                    <p class="text-xs text-purple-700">Links available on the official MapLibre website</p>
+                  </div>
+                </div>
+              </div>
+              <div class="space-y-6">
+                <div class="bg-white p-6 rounded-lg shadow-sm border">
+                  <h4 class="font-semibold text-gray-900 mb-4">
+                    <i class="fab fa-stack-overflow text-orange-500 text-2xl mr-3"></i>Stack Overflow
+                  </h4>
+                  <p class="text-sm text-gray-700 mb-4">Tag your questions with relevant keywords:</p>
+                  <div class="flex flex-wrap gap-2">
+                    <span class="px-3 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">maplibre-gl-js</span>
+                    <span class="px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">react</span>
+                    <span class="px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">typescript</span>
+                    <span class="px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full">gis</span>
+                  </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-sm border">
+                  <h4 class="font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-users text-blue-600 text-2xl mr-3"></i>GIS Stack Exchange
+                  </h4>
+                  <p class="text-sm text-gray-700 mb-4">Specialized forum for GIS-specific questions and advanced topics.</p>
+                  <div class="bg-blue-50 p-3 rounded">
+                    <p class="text-xs text-blue-700">Great for spatial analysis and data processing questions</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary CTA -->
+          <div class="bg-gradient-to-r from-ocean-600 to-ocean-700 text-white p-8 rounded-2xl text-center">
+            <h3 class="font-serif text-3xl font-semibold mb-4">Start Your MapLibre Journey Today</h3>
+            <p class="text-ocean-100 mb-6 max-w-2xl mx-auto">
+              With the right foundation in MapLibre, TypeScript, and React, you&#39;re equipped to build powerful cloud-based GIS applications that scale and perform beautifully.
+            </p>
+            <div class="flex flex-wrap justify-center gap-4">
+              <a href="#" class="bg-white text-ocean-600 px-6 py-3 rounded-lg font-medium hover:bg-ocean-50 transition-colors">
+                <i class="fas fa-book-open mr-2"></i>Explore Documentation
+              </a>
+              <a href="#" class="bg-ocean-800 text-white px-6 py-3 rounded-lg font-medium hover:bg-ocean-900 transition-colors">
+                <i class="fab fa-github mr-2"></i>Join Community
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+        // Mobile TOC Toggle
+        const tocToggle = document.getElementById('toc-toggle');
+        const toc = document.getElementById('toc');
+        const tocOverlay = document.getElementById('toc-overlay');
+
+        function closeTOC() {
+            toc.classList.remove('open');
+            tocOverlay.classList.add('hidden');
+        }
+
+        tocToggle.addEventListener('click', () => {
+            toc.classList.toggle('open');
+            tocOverlay.classList.toggle('hidden');
+        });
+
+        // Close TOC when clicking outside
+        tocOverlay.addEventListener('click', closeTOC);
+
+        // Close TOC when window is resized to desktop size
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 1024) {
+                closeTOC();
+            }
+        });
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                    // Close mobile TOC after clicking
+                    closeTOC();
+                }
+            });
+        });
+
+        // Add active state to TOC links based on scroll position
+        window.addEventListener('scroll', () => {
+            const sections = document.querySelectorAll('section[id]');
+            const tocLinks = document.querySelectorAll('#toc a[href^="#"]');
+            
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (pageYOffset >= sectionTop - 200) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            tocLinks.forEach(link => {
+                link.classList.remove('bg-ocean-100', 'text-ocean-800', 'font-medium');
+                if (link.getAttribute('href') === '#' + current) {
+                    link.classList.add('bg-ocean-100', 'text-ocean-800', 'font-medium');
+                }
+            });
+        });
+
+        // Copy code functionality
+        document.querySelectorAll('.fa-copy').forEach(button => {
+            button.addEventListener('click', function() {
+                const codeBlock = this.closest('.bg-gray-900').querySelector('code');
+                const textArea = document.createElement('textarea');
+                textArea.value = codeBlock.textContent;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                // Visual feedback
+                const icon = this.querySelector('i');
+                icon.className = 'fas fa-check';
+                setTimeout(() => {
+                    icon.className = 'fas fa-copy';
+                }, 2000);
+            });
+        });
+    </script>
+  
+
+</body></html>
